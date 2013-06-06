@@ -2395,6 +2395,9 @@ Strophe.Connection.prototype = {
             this._changeConnectStatus(Strophe.Status.DISCONNECTED, null);
             this.connected = false;
         }
+        else {
+            this._changeConnectStatus(Strophe.Status.CONNFAIL, "unknown");
+        }
 
         // delete handlers
         this.handlers = [];
