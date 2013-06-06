@@ -3192,6 +3192,13 @@ Strophe.Connection.prototype = {
         if (this._requests.length < 2 && this._data.length > 0 &&
             !this.paused) {
             body = this._buildBody();
+            // DO begin: add arbitrary attributes to body
+            if (this.storedBodyAttrs)
+            {
+                body.attrs(this.storedBodyAttrs);
+                this.storedBodyAttrs    = null;
+            }
+            // DO end
             for (i = 0; i < this._data.length; i++) {
                 if (this._data[i] !== null) {
                     if (this._data[i] === "restart") {
@@ -3240,6 +3247,20 @@ Strophe.Connection.prototype = {
         if (this.connected) {
             this._idleTimeout = setTimeout(this._onIdle.bind(this), 100);
         }
+    },
+    
+    /**
+     * DO: Stores data will be added to request as 'body' attribute
+     *  Parameters:
+     *    (String) name - Attribute name.
+     *    (Variant) value - Attribute value.
+     */
+    setBodyAttribute: function(name, value)
+    {
+        if (!this.storedBodyAttrs)
+            this.storedBodyAttrs    = {};
+            
+        this.storedBodyAttrs[name] = value;
     }
 };
 
