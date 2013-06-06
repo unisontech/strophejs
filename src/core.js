@@ -2194,21 +2194,20 @@ Strophe.Connection.prototype = {
             // Fires the XHR request -- may be invoked immediately
             // or on a gradually expanding retry window for reconnects
             var sendFunc = function () {
-                req.date = new Date();
-                req.xhr.send(req.data);
+                try {
+                    req.date = new Date();
+                    req.xhr.send(req.data);
+                } catch(e) {
+                    Strophe.error(e);
+                }
             };
 
             // Implement progressive backoff for reconnects --
             // First retry (send == 1) should also be instantaneous
-            if (req.sends > 1) {
-                // Using a cube of the retry number creates a nicely
-                // expanding retry window
-                var backoff = Math.min(Math.floor(Strophe.TIMEOUT * this.wait),
-                                       Math.pow(req.sends, 3)) * 1000;
-                setTimeout(sendFunc, backoff);
-            } else {
+            if (req.sends > 1)
+                setTimeout(sendFunc, Strophe.TIMEOUT * 1000);
+            else
                 sendFunc();
-            }
 
             req.sends++;
 
@@ -2298,7 +2297,7 @@ Strophe.Connection.prototype = {
 
             if (this.disconnecting) {
                 if (reqStatus >= 400) {
-                    this._hitError(reqStatus);
+                    this._hitError(reqStatus, req);
                     return;
                 }
             }
@@ -2339,7 +2338,7 @@ Strophe.Connection.prototype = {
                 if (reqStatus === 0 ||
                     (reqStatus >= 400 && reqStatus < 600) ||
                     reqStatus >= 12000) {
-                    this._hitError(reqStatus);
+                    this._hitError(reqStatus, req);
                     if (reqStatus >= 400 && reqStatus < 500) {
                         this._changeConnectStatus(Strophe.Status.DISCONNECTING,
                                                   null);
