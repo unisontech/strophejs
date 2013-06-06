@@ -2950,7 +2950,10 @@ Strophe.Connection.prototype = {
             if (resource) {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: Strophe.NS.BIND})
-                          .c('resource', {}).t(resource).tree());
+                            .c('resource', {}).t(resource)
+                          .up()
+                            .c('user-agent').t(navigator.userAgent)
+                          .tree());
             } else {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: Strophe.NS.BIND})
