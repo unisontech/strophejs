@@ -2600,6 +2600,7 @@ Strophe.Connection.prototype = {
         var do_sasl_plain = false;
         var do_sasl_digest_md5 = false;
         var do_sasl_anonymous = false;
+        var do_sasl_signed_cookie   = false;
 
         var mechanisms = bodyWrap.getElementsByTagName("mechanism");
         var i, mech, auth_str, hashed_auth_str;
@@ -2612,6 +2613,8 @@ Strophe.Connection.prototype = {
                     do_sasl_plain = true;
                 } else if (mech == 'ANONYMOUS') {
                     do_sasl_anonymous = true;
+                } else if (mech == 'X-SIGNED-COOKIE') {
+                    do_sasl_signed_cookie = true;
                 }
             }
         } else {
@@ -2647,6 +2650,21 @@ Strophe.Connection.prototype = {
             this._changeConnectStatus(Strophe.Status.CONNFAIL,
                                       'x-strophe-bad-non-anon-jid');
             this.disconnect();
+        } else if (do_sasl_signed_cookie) {
+            this._changeConnectStatus(Strophe.Status.AUTHENTICATING, null);
+            this._sasl_success_handler = this._addSysHandler(
+                this._sasl_success_cb.bind(this), null,
+                "success", null, null);
+            this._sasl_failure_handler = this._addSysHandler(
+                this._sasl_failure_cb.bind(this), null,
+                "failure", null, null);
+
+            hashed_auth_str = Base64.encode(this.pass);
+            this.send($build("auth", {
+                xmlns: Strophe.NS.SASL,
+                mechanism: "X-SIGNED-COOKIE"
+            }).t(hashed_auth_str).tree());
+            
         } else if (do_sasl_digest_md5) {
             this._changeConnectStatus(Strophe.Status.AUTHENTICATING, null);
             this._sasl_challenge_handler = this._addSysHandler(
