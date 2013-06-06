@@ -465,7 +465,7 @@ Strophe = {
      */
     xmlescape: function(text)
     {
-        text = text.replace(/\&/g, "&amp;");
+        text = text.replace(/\&[^(amp|lt|gt|apos|qout)]/g, "&amp;");
         text = text.replace(/</g,  "&lt;");
         text = text.replace(/>/g,  "&gt;");
         text = text.replace(/'/g,  "&apos;");
