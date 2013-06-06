@@ -465,11 +465,12 @@ Strophe = {
      */
     xmlescape: function(text)
     {
-        text = text.replace(/\&[^(amp|lt|gt|apos|qout)]/g, "&amp;");
+        text = text.replace(/\&(?!(lt|gt|apos|quot);)(amp;)?/g, "&amp;");
         text = text.replace(/</g,  "&lt;");
         text = text.replace(/>/g,  "&gt;");
         text = text.replace(/'/g,  "&apos;");
         text = text.replace(/"/g,  "&quot;");
+
         return text;
     },
 
@@ -487,7 +488,7 @@ Strophe = {
     xmlTextNode: function (text)
     {
     	//ensure text is escaped
-    	// text = Strophe.xmlescape(text);
+    	text = Strophe.xmlescape(text);
 
         return Strophe.xmlGenerator().createTextNode(text);
     },
