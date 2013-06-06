@@ -2501,6 +2501,12 @@ Strophe.Connection.prototype = {
                     }
                 } catch(e) {
                     //if the handler throws an exception, we consider it as false
+                    if (window.console)
+                        console.log('Exception in "'
+                            + (child.getAttribute('xmlns')
+                               ? (child.getAttribute('xmlns') + '.')
+                               : '')
+                            + child.nodeName + '" stanza handler.');
                 }
             }
         });
