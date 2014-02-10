@@ -370,11 +370,11 @@ Strophe.Bosh.prototype = {
      *  Parameters:
      *    (Integer) reqStatus - The request status.
      */
-    _hitError: function (reqStatus)
+    _hitError: function (reqStatus, req)
     {
         this.errors++;
         Strophe.warn("request errored, status: " + reqStatus +
-                     ", number of errors: " + this.errors);
+                     ", number of errors: " + this.errors, req);
         if (this.errors > 4) {
             this._onDisconnectTimeout();
         }
@@ -438,6 +438,13 @@ Strophe.Bosh.prototype = {
         if (this._requests.length < 2 && data.length > 0 &&
             !this._conn.paused) {
             var body = this._buildBody();
+            // DO begin: add arbitrary attributes to body
+            if (this.storedBodyAttrs)
+            {
+                body.attrs(this.storedBodyAttrs);
+                this.storedBodyAttrs    = null;
+            }
+            // DO end
             for (var i = 0; i < data.length; i++) {
                 if (data[i] !== null) {
                     if (data[i] === "restart") {
@@ -480,6 +487,20 @@ Strophe.Bosh.prototype = {
             }
         }
     },
+    
+    /**
+     * DO: Stores data will be added to request as 'body' attribute
+     *  Parameters:
+     *    (String) name - Attribute name.
+     *    (Variant) value - Attribute value.
+     */
+    setBodyAttribute: function(name, value)
+    {
+        if (!this.storedBodyAttrs)
+            this.storedBodyAttrs    = {};
+            
+        this.storedBodyAttrs[name] = value;
+    },
 
     /** PrivateFunction: _onRequestStateChange
      *  _Private_ handler for Strophe.Request state changes.
@@ -521,7 +542,7 @@ Strophe.Bosh.prototype = {
 
             if (this.disconnecting) {
                 if (reqStatus >= 400) {
-                    this._hitError(reqStatus);
+                    this._hitError(reqStatus, req);
                     return;
                 }
             }
@@ -562,7 +583,7 @@ Strophe.Bosh.prototype = {
                 if (reqStatus === 0 ||
                     (reqStatus >= 400 && reqStatus < 600) ||
                     reqStatus >= 12000) {
-                    this._hitError(reqStatus);
+                    this._hitError(reqStatus, req);
                     if (reqStatus >= 400 && reqStatus < 500) {
                         this._conn._changeConnectStatus(Strophe.Status.DISCONNECTING,
                                                   null);
@@ -657,26 +678,26 @@ Strophe.Bosh.prototype = {
             // Fires the XHR request -- may be invoked immediately
             // or on a gradually expanding retry window for reconnects
             var sendFunc = function () {
-                req.date = new Date();
-                if (self._conn.options.customHeaders){
-                    var headers = self._conn.options.customHeaders;
-                    for (var header in headers) {
-                        if (headers.hasOwnProperty(header)) {
-                            req.xhr.setRequestHeader(header, headers[header]);
+                try {
+                    req.date = new Date();
+                    if (self._conn.options.customHeaders){
+                        var headers = self._conn.options.customHeaders;
+                        for (var header in headers) {
+                            if (headers.hasOwnProperty(header)) {
+                                req.xhr.setRequestHeader(header, headers[header]);
+                            }
                         }
                     }
+                    req.xhr.send(req.data);
+                } catch (e) {
+                    Strophe.error('Strophe: BOSH connection failure', e);
                 }
-                req.xhr.send(req.data);
             };
 
             // Implement progressive backoff for reconnects --
             // First retry (send == 1) should also be instantaneous
             if (req.sends > 1) {
-                // Using a cube of the retry number creates a nicely
-                // expanding retry window
-                var backoff = Math.min(Math.floor(Strophe.TIMEOUT * this.wait),
-                                       Math.pow(req.sends, 3)) * 1000;
-                setTimeout(sendFunc, backoff);
+                setTimeout(sendFunc, Strophe.TIMEOUT * 1000);
             } else {
                 sendFunc();
             }

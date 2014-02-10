@@ -535,7 +535,7 @@ Strophe = {
      */
     xmlescape: function(text)
     {
-        text = text.replace(/\&/g, "&amp;");
+        text = text.replace(/\&(?!(lt|gt|apos|quot);)(amp;)?/g, "&amp;");
         text = text.replace(/</g,  "&lt;");
         text = text.replace(/>/g,  "&gt;");
         text = text.replace(/'/g,  "&apos;");
@@ -2161,6 +2161,8 @@ Strophe.Connection.prototype = {
             this._disconnectTimeout = this._addSysTimedHandler(
                 3000, this._onDisconnectTimeout.bind(this));
             this._proto._disconnect(pres);
+        } else {
+            this._changeConnectStatus(Strophe.Status.CONNFAIL, 'unknown');
         }
     },
 
@@ -2334,6 +2336,12 @@ Strophe.Connection.prototype = {
                 } catch(e) {
                     // if the handler throws an exception, we consider it as false
                     Strophe.warn('Removing Strophe handlers due to uncaught exception: ' + e.message);
+                    
+                    if (window && window.console)
+                        console.log('Exception in "' +
+                            (child.getAttribute('xmlns') ?
+                               (child.getAttribute('xmlns') + '.') : '') +
+                            child.nodeName + '" stanza handler.');
                 }
             }
         });
@@ -2394,8 +2402,8 @@ Strophe.Connection.prototype = {
         this._authentication.sasl_plain = false;
         this._authentication.sasl_digest_md5 = false;
         this._authentication.sasl_anonymous = false;
-
         this._authentication.legacy_auth = false;
+        this._authentication.do_sasl_signed_cookie   = false;
 
         // Check for the stream:features tag
         var hasFeatures = bodyWrap.getElementsByTagName("stream:features").length > 0;
@@ -2665,7 +2673,11 @@ Strophe.Connection.prototype = {
             if (resource) {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: Strophe.NS.BIND})
-                          .c('resource', {}).t(resource).tree());
+                          .c('resource', {})
+                            .t(resource)
+                          .up()
+                            .c('user-agent').t(window.navigator.userAgent)
+                          .tree());
             } else {
                 this.send($iq({type: "set", id: "_bind_auth_2"})
                           .c('bind', {xmlns: Strophe.NS.BIND})
@@ -3289,6 +3301,28 @@ Strophe.SASLMD5.prototype.onChallenge = function(connection, challenge, test_cno
 };
 
 Strophe.Connection.prototype.mechanisms[Strophe.SASLMD5.prototype.name] = Strophe.SASLMD5;
+
+/*******************************/
+
+/** PrivateConstructor: SASLXSignedCookie
+ *  SASL X-Signed-Cookie authentication.
+ */
+Strophe.SASLXSignedCookie = function() {};
+
+Strophe.SASLXSignedCookie.prototype = new Strophe.SASLMechanism("X-SIGNED-COOKIE", true, 50);
+
+Strophe.SASLXSignedCookie.test = function(connection) {
+  return connection.authcid !== null;
+};
+
+Strophe.SASLXSignedCookie.prototype.onChallenge = function(connection) {
+    return connection.pass;
+};
+
+Strophe.Connection.prototype.mechanisms[Strophe.SASLXSignedCookie.prototype.name] = Strophe.SASLXSignedCookie;
+
+/******************************/
+
 
 })(function () {
     window.Strophe = arguments[0];
