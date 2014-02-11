@@ -612,7 +612,8 @@ Strophe = {
      */
     getNodeFromJid: function (jid)
     {
-        return jid ? jid.split("/")[0] : null;
+        if (jid.indexOf("@") < 0) { return null; }
+        return jid.split("@")[0];
     },
 
     /** Function: getDomainFromJid
