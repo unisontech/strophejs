@@ -815,6 +815,9 @@ Strophe = {
      */
     getResourceFromJid: function (jid)
     {
+        if (!jid)
+            return null; // TODO QA
+
         var s = jid.split("/");
         if (s.length < 2) { return null; }
         s.splice(0, 1);
