@@ -627,9 +627,6 @@ Strophe = {
      */
     getDomainFromJid: function (jid)
     {
-        if (!jid)
-            return;
-
         var bare = Strophe.getBareJidFromJid(jid);
         if (bare.indexOf("@") < 0) {
             return bare;
